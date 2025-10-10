@@ -1,0 +1,566 @@
+#!/usr/bin/env bash
+
+# disco - Discourse Launcher Management Tool
+# A convenient wrapper for managing Discourse with Telegram notifications
+#
+# GitHub: https://github.com/yourusername/disco
+# Installation: sudo cp disco /usr/local/bin/disco && sudo chmod +x /usr/local/bin/disco
+# Usage: disco <command> [options]
+
+VERSION="1.0.0"
+
+DEFAULT_DISCOURSE_PATH="/var/discourse"
+DEFAULT_CONFIG_NAME="app"
+
+load_env() {
+  local env_file=""
+  
+  if [[ -f "$HOME/.disco.env" ]]; then
+    env_file="$HOME/.disco.env"
+  elif [[ -f "/etc/disco/.env" ]]; then
+    env_file="/etc/disco/.env"
+  elif [[ -f "$(dirname "$0")/.env" ]]; then
+    env_file="$(dirname "$0")/.env"
+  elif [[ -f ".env" ]]; then
+    env_file=".env"
+  fi
+  
+  if [[ -n "$env_file" ]]; then
+    export $(grep -v '^#' "$env_file" | grep -v '^$' | xargs)
+  fi
+}
+
+load_env
+
+DISCOURSE_PATH="${DISCOURSE_PATH:-$DEFAULT_DISCOURSE_PATH}"
+LAUNCHER_PATH="${DISCOURSE_PATH}/launcher"
+CONFIG_NAME="${CONFIG_NAME:-$DEFAULT_CONFIG_NAME}"
+
+TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
+TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID:-}"
+TELEGRAM_THREAD_ID="${TELEGRAM_THREAD_ID:-}"
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+send_telegram() {
+  local message="$1"
+  local silent="${2:-false}"
+  
+  if [[ -z "$TELEGRAM_BOT_TOKEN" || -z "$TELEGRAM_CHAT_ID" ]]; then
+    return 0
+  fi
+  
+  local base_params="chat_id=${TELEGRAM_CHAT_ID}&text=${message}&parse_mode=HTML"
+  
+  if [[ "$silent" == "true" ]]; then
+    base_params="${base_params}&disable_notification=true"
+  fi
+  
+  if [[ -n "$TELEGRAM_THREAD_ID" ]]; then
+    local response=$(curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+      -d "${base_params}&message_thread_id=${TELEGRAM_THREAD_ID}" 2>&1)
+    
+    if [[ $? -eq 0 ]] && [[ $response == *'"ok":true'* ]]; then
+      return 0
+    fi
+  fi
+  
+  curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+    -d "$base_params" > /dev/null 2>&1
+}
+
+log_info() {
+  echo -e "${BLUE}ℹ️  $1${NC}"
+}
+
+log_success() {
+  echo -e "${GREEN}✅ $1${NC}"
+}
+
+log_error() {
+  echo -e "${RED}❌ $1${NC}"
+}
+
+log_warning() {
+  echo -e "${YELLOW}⚠️  $1${NC}"
+}
+
+check_root() {
+  if [[ $EUID -ne 0 ]]; then
+    log_error "This command requires root privileges. Use sudo."
+    exit 1
+  fi
+}
+
+check_discourse() {
+  if [[ ! -d "$DISCOURSE_PATH" ]]; then
+    log_error "Discourse not found at $DISCOURSE_PATH"
+    log_info "Set the path via DISCOURSE_PATH in .env file"
+    exit 1
+  fi
+  
+  if [[ ! -f "$LAUNCHER_PATH" ]]; then
+    log_error "Launcher not found: $LAUNCHER_PATH"
+    exit 1
+  fi
+}
+
+get_container_status() {
+  docker ps -a --filter "name=^${CONFIG_NAME}$" --format "{{.Status}}" 2>/dev/null
+}
+
+get_container_uptime() {
+  docker ps --filter "name=^${CONFIG_NAME}$" --format "{{.Status}}" 2>/dev/null | grep -oE 'Up [^(]+'
+}
+
+get_discourse_version() {
+  docker exec $CONFIG_NAME cat /var/www/discourse/config/version.rb 2>/dev/null | grep VERSION | cut -d'"' -f2 | tr -d '\r\n' || echo "unknown"
+}
+
+cmd_rebuild() {
+  check_root
+  check_discourse
+  
+  local start_time=$(date +%s)
+  
+  log_info "Starting rebuild of container '$CONFIG_NAME'..."
+  send_telegram "🔧 <b>Forum is going into maintenance</b>
+
+⏱ Expected time: <b>~10 minutes</b>
+
+We apologize for the temporary inconvenience."
+  
+  cd "$DISCOURSE_PATH" || exit 1
+  
+  if ./launcher rebuild "$CONFIG_NAME"; then
+    local end_time=$(date +%s)
+    local duration=$((end_time - start_time))
+    local minutes=$((duration / 60))
+    local seconds=$((duration % 60))
+    
+    local version=$(get_discourse_version)
+    
+    log_success "Rebuild completed successfully in ${minutes}m ${seconds}s"
+    send_telegram "✅ <b>Forum is back online!</b>
+
+⏱ Maintenance time: <b>${minutes}m ${seconds}s</b>
+🔖 Version: <code>$version</code>
+
+Thank you for your patience! 🚀"
+  else
+    local end_time=$(date +%s)
+    local duration=$((end_time - start_time))
+    
+    log_error "Rebuild failed"
+    send_telegram "❌ <b>Forum update failed</b>
+
+⏱ Attempt duration: <b>$((duration / 60))m $((duration % 60))s</b>
+
+⚠️ Administrator attention required!
+Check logs: <code>disco logs</code>"
+    exit 1
+  fi
+}
+
+cmd_fast_rebuild() {
+  check_root
+  check_discourse
+  
+  log_info "Fast rebuild (without launcher update)..."
+  send_telegram "⚡️ <b>Quick forum update</b>" true
+  
+  cd "$DISCOURSE_PATH" || exit 1
+  
+  local start_time=$(date +%s)
+  
+  if ./launcher rebuild "$CONFIG_NAME"; then
+    local duration=$(( $(date +%s) - start_time ))
+    log_success "Fast rebuild completed in $((duration / 60))m $((duration % 60))s"
+    send_telegram "✅ Update completed in <b>$((duration / 60))m $((duration % 60))s</b>" true
+  else
+    log_error "Rebuild failed"
+    exit 1
+  fi
+}
+
+cmd_start() {
+  check_root
+  check_discourse
+  
+  log_info "Starting container '$CONFIG_NAME'..."
+  cd "$DISCOURSE_PATH" || exit 1
+  
+  if ./launcher start "$CONFIG_NAME"; then
+    log_success "Container started"
+    send_telegram "▶️ Forum started" true
+  else
+    log_error "Failed to start container"
+    exit 1
+  fi
+}
+
+cmd_stop() {
+  check_root
+  check_discourse
+  
+  log_info "Stopping container '$CONFIG_NAME'..."
+  send_telegram "⏸ Forum is shutting down..." true
+  
+  cd "$DISCOURSE_PATH" || exit 1
+  
+  if ./launcher stop "$CONFIG_NAME"; then
+    log_success "Container stopped"
+    send_telegram "⏹ Forum stopped" true
+  else
+    log_error "Failed to stop container"
+    exit 1
+  fi
+}
+
+cmd_restart() {
+  check_root
+  check_discourse
+  
+  log_info "Restarting container '$CONFIG_NAME'..."
+  send_telegram "🔄 Forum is restarting..." true
+  
+  cd "$DISCOURSE_PATH" || exit 1
+  
+  if ./launcher restart "$CONFIG_NAME"; then
+    log_success "Container restarted"
+    send_telegram "✅ Forum restarted successfully" true
+  else
+    log_error "Failed to restart container"
+    exit 1
+  fi
+}
+
+cmd_logs() {
+  check_discourse
+  
+  local lines="${1:-100}"
+  
+  log_info "Last $lines lines of container '$CONFIG_NAME' logs:"
+  docker logs --tail "$lines" -f "$CONFIG_NAME"
+}
+
+cmd_enter() {
+  check_discourse
+  
+  log_info "Entering container '$CONFIG_NAME'..."
+  cd "$DISCOURSE_PATH" || exit 1
+  ./launcher enter "$CONFIG_NAME"
+}
+
+cmd_status() {
+  check_discourse
+  
+  local status=$(get_container_status)
+  local uptime=$(get_container_uptime)
+  
+  echo -e "\n${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${BLUE}📊 Discourse Status${NC}"
+  echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
+  
+  echo -e "📦 Container: ${GREEN}$CONFIG_NAME${NC}"
+  
+  if [[ -n "$status" ]]; then
+    if [[ "$status" =~ "Up" ]]; then
+      echo -e "🟢 Status: ${GREEN}Running${NC}"
+      echo -e "⏱  Uptime: ${GREEN}$uptime${NC}"
+      
+      local version=$(get_discourse_version)
+      echo -e "🔖 Version: ${GREEN}$version${NC}"
+      
+      local cpu=$(docker stats --no-stream --format "{{.CPUPerc}}" "$CONFIG_NAME" 2>/dev/null)
+      local mem=$(docker stats --no-stream --format "{{.MemUsage}}" "$CONFIG_NAME" 2>/dev/null)
+      
+      if [[ -n "$cpu" ]]; then
+        echo -e "💻 CPU: ${GREEN}$cpu${NC}"
+        echo -e "🧠 Memory: ${GREEN}$mem${NC}"
+      fi
+    else
+      echo -e "🔴 Status: ${RED}$status${NC}"
+    fi
+  else
+    echo -e "🔴 Status: ${RED}Container not found${NC}"
+  fi
+  
+  echo -e "\n${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
+}
+
+cmd_backup() {
+  check_root
+  check_discourse
+  
+  local backup_name="${1:-manual-$(date +%Y%m%d-%H%M%S)}"
+  
+  log_info "Creating backup '$backup_name'..."
+  send_telegram "💾 <b>Creating backup</b>
+
+📦 Name: <code>$backup_name</code>
+⏳ This may take several minutes..." true
+  
+  docker exec -it "$CONFIG_NAME" discourse backup "$backup_name"
+  
+  if [[ $? -eq 0 ]]; then
+    log_success "Backup created"
+    send_telegram "✅ <b>Backup created</b>
+
+📦 Name: <code>$backup_name</code>
+📁 Path: <code>/var/discourse/shared/standalone/backups/default/</code>" true
+  else
+    log_error "Backup creation failed"
+    exit 1
+  fi
+}
+
+cmd_cleanup() {
+  check_root
+  
+  log_info "Checking Docker resources for cleanup..."
+  
+  echo ""
+  echo -e "${BLUE}📊 Current Docker usage:${NC}"
+  docker system df
+  
+  echo ""
+  echo -e "${YELLOW}⚠️  Will be removed:${NC}"
+  echo "  • Stopped containers (older than 1 hour)"
+  echo "  • Unused images (older than 1 hour)"
+  echo "  • Unused volumes and networks"
+  echo ""
+  echo -e "${GREEN}✅ Active container '$CONFIG_NAME' will NOT be affected${NC}"
+  echo ""
+  
+  read -p "Continue cleanup? [y/N]: " -n 1 -r
+  echo
+  
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    log_warning "Cleanup cancelled"
+    exit 0
+  fi
+  
+  log_info "Cleaning up unused Docker resources..."
+  
+  cd "$DISCOURSE_PATH" || exit 1
+  ./launcher cleanup
+  
+  log_success "Cleanup completed"
+  
+  echo ""
+  echo -e "${BLUE}📊 Usage after cleanup:${NC}"
+  docker system df
+}
+
+cmd_update_launcher() {
+  check_root
+  check_discourse
+  
+  log_info "Updating launcher..."
+  
+  cd "$DISCOURSE_PATH" || exit 1
+  
+  git fetch origin
+  local current=$(git rev-parse HEAD)
+  local remote=$(git rev-parse @{u})
+  
+  if [[ "$current" == "$remote" ]]; then
+    log_info "Launcher is already up to date"
+  else
+    git pull
+    log_success "Launcher updated"
+    send_telegram "📥 <b>Launcher updated</b>
+
+🔄 Rebuild recommended" true
+  fi
+}
+
+cmd_test_telegram() {
+  if [[ -z "$TELEGRAM_BOT_TOKEN" || -z "$TELEGRAM_CHAT_ID" ]]; then
+    log_error "Telegram not configured!"
+    log_info "Create .env file with settings:"
+    echo ""
+    echo "TELEGRAM_BOT_TOKEN=your_bot_token_here"
+    echo "TELEGRAM_CHAT_ID=your_chat_id_here"
+    echo "TELEGRAM_THREAD_ID=your_thread_id_here  # optional"
+    echo ""
+    log_info ".env file location: ~/.disco.env or /etc/disco/.env"
+    exit 1
+  fi
+  
+  log_info "Sending test message to Telegram..."
+  
+  send_telegram "🧪 <b>Test message</b>
+
+✅ Notifications are working correctly!
+🤖 disco v${VERSION}
+📅 $(date '+%Y-%m-%d %H:%M:%S')" false
+  
+  log_success "Test message sent"
+}
+
+cmd_monitor() {
+  check_discourse
+  
+  log_info "Monitoring container '$CONFIG_NAME' (Ctrl+C to exit)..."
+  docker stats "$CONFIG_NAME"
+}
+
+cmd_config() {
+  check_discourse
+  
+  local config_file="${DISCOURSE_PATH}/containers/${CONFIG_NAME}.yml"
+  
+  if [[ -f "$config_file" ]]; then
+    less "$config_file"
+  else
+    log_error "Configuration file not found: $config_file"
+    exit 1
+  fi
+}
+
+cmd_show_config() {
+  echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${BLUE}⚙️  disco Configuration${NC}"
+  echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
+  
+  echo -e "📁 Discourse path: ${GREEN}$DISCOURSE_PATH${NC}"
+  echo -e "📦 Container name: ${GREEN}$CONFIG_NAME${NC}"
+  
+  if [[ -n "$TELEGRAM_BOT_TOKEN" ]]; then
+    echo -e "📱 Telegram: ${GREEN}Configured${NC}"
+    echo -e "   Chat ID: ${GREEN}$TELEGRAM_CHAT_ID${NC}"
+    if [[ -n "$TELEGRAM_THREAD_ID" ]]; then
+      echo -e "   Thread ID: ${GREEN}$TELEGRAM_THREAD_ID${NC}"
+    fi
+  else
+    echo -e "📱 Telegram: ${YELLOW}Not configured${NC}"
+  fi
+  
+  echo ""
+}
+
+show_help() {
+  echo -e "${GREEN}disco${NC} - Discourse Launcher Management Tool v${VERSION}\n"
+  echo -e "${BLUE}Usage:${NC}"
+  echo -e "  disco <command> [options]\n"
+  
+  echo -e "${BLUE}Management commands:${NC}"
+  echo -e "  ${GREEN}re, rebuild${NC}           Full container rebuild (with updates)"
+  echo -e "  ${GREEN}fast-rebuild${NC}          Quick rebuild without launcher update"
+  echo -e "  ${GREEN}start${NC}                 Start container"
+  echo -e "  ${GREEN}stop${NC}                  Stop container"
+  echo -e "  ${GREEN}restart${NC}               Restart container"
+  echo -e "  ${GREEN}enter${NC}                 Enter container (shell)\n"
+  
+  echo -e "${BLUE}Information commands:${NC}"
+  echo -e "  ${GREEN}status, st${NC}            Show container status"
+  echo -e "  ${GREEN}logs [N]${NC}              Show last N lines of logs (default 100)"
+  echo -e "  ${GREEN}monitor${NC}               Real-time resource monitoring"
+  echo -e "  ${GREEN}config${NC}                Show container configuration"
+  echo -e "  ${GREEN}show-config${NC}           Show disco configuration\n"
+  
+  echo -e "${BLUE}Maintenance commands:${NC}"
+  echo -e "  ${GREEN}backup [name]${NC}         Create backup"
+  echo -e "  ${GREEN}cleanup${NC}               Clean unused Docker resources"
+  echo -e "  ${GREEN}update-launcher${NC}       Update launcher to latest version\n"
+  
+  echo -e "${BLUE}Utilities:${NC}"
+  echo -e "  ${GREEN}test-telegram${NC}         Send test Telegram notification"
+  echo -e "  ${GREEN}help, -h, --help${NC}      Show this help"
+  echo -e "  ${GREEN}version, -v${NC}           Show version\n"
+  
+  echo -e "${BLUE}Configuration (.env file):${NC}"
+  echo -e "  Create ${GREEN}~/.disco.env${NC} or ${GREEN}/etc/disco/.env${NC} with settings:"
+  echo -e "    DISCOURSE_PATH=/var/discourse"
+  echo -e "    CONFIG_NAME=app"
+  echo -e "    TELEGRAM_BOT_TOKEN=your_token"
+  echo -e "    TELEGRAM_CHAT_ID=your_chat_id"
+  echo -e "    TELEGRAM_THREAD_ID=your_thread_id  # optional\n"
+  
+  echo -e "${BLUE}Examples:${NC}"
+  echo -e "  disco re                    # Full rebuild with notifications"
+  echo -e "  disco status                # Check status"
+  echo -e "  disco logs 500              # Show 500 lines of logs"
+  echo -e "  disco backup my-backup      # Create backup"
+  echo -e "  disco test-telegram         # Test notifications\n"
+  
+  echo -e "${YELLOW}💡 Tip:${NC} Most commands require sudo"
+}
+
+main() {
+  if [[ $# -eq 0 ]]; then
+    show_help
+    exit 0
+  fi
+  
+  local command="$1"
+  shift
+  
+  case "$command" in
+    re|rebuild)
+      cmd_rebuild "$@"
+      ;;
+    fast-rebuild|fast)
+      cmd_fast_rebuild "$@"
+      ;;
+    start)
+      cmd_start "$@"
+      ;;
+    stop)
+      cmd_stop "$@"
+      ;;
+    restart)
+      cmd_restart "$@"
+      ;;
+    logs)
+      cmd_logs "$@"
+      ;;
+    enter|shell)
+      cmd_enter "$@"
+      ;;
+    status|st)
+      cmd_status "$@"
+      ;;
+    backup)
+      cmd_backup "$@"
+      ;;
+    cleanup|clean)
+      cmd_cleanup "$@"
+      ;;
+    update-launcher|update)
+      cmd_update_launcher "$@"
+      ;;
+    test-telegram|test)
+      cmd_test_telegram "$@"
+      ;;
+    monitor|mon)
+      cmd_monitor "$@"
+      ;;
+    config|conf)
+      cmd_config "$@"
+      ;;
+    show-config)
+      cmd_show_config "$@"
+      ;;
+    help|-h|--help)
+      show_help
+      ;;
+    version|-v|--version)
+      echo "disco v${VERSION}"
+      ;;
+    *)
+      log_error "Unknown command: $command"
+      echo ""
+      show_help
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"
