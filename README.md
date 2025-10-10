@@ -1,19 +1,22 @@
 # 🎯 disco - Discourse Launcher Management Tool
 
-A convenient wrapper for managing Discourse with Telegram notifications support.
+A convenient wrapper for managing Discourse with **interactive menu** and Telegram notifications support.
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-1.1.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Bash](https://img.shields.io/badge/bash-5.0+-orange)
 
 ## ✨ Features
 
+- 🎮 **Interactive menu** - navigate with arrow keys, no need to remember commands
 - 🔄 **Container management** - rebuild, start, stop, restart
 - 📊 **Monitoring** - status, logs, resource usage
 - 💾 **Backup** - quick backup creation
 - 📱 **Telegram notifications** - stay informed about all operations
+- ⚠️ **Safety confirmations** - critical operations require explicit confirmation
 - 🎨 **Beautiful interface** - colored output and clear messages
 - ⚙️ **Flexible configuration** - .env file support
+- 🔐 **Smart sudo detection** - warns when root privileges are required
 
 ## 📦 Installation
 
@@ -21,7 +24,7 @@ A convenient wrapper for managing Discourse with Telegram notifications support.
 
 ```bash
 # Download and install
-curl -o disco https://raw.githubusercontent.com/yourusername/disco/main/disco
+curl -o disco https://raw.githubusercontent.com/dignezzz/discourse-cli/main/disco
 chmod +x disco
 sudo mv disco /usr/local/bin/
 
@@ -33,7 +36,7 @@ disco version
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/disco.git
+git clone https://github.com/dignezzz/discourse-cli.git
 cd disco
 
 # Install
@@ -89,7 +92,48 @@ TELEGRAM_THREAD_ID=1
 
 ## 🚀 Usage
 
-### Basic commands
+### Interactive Menu (Recommended!)
+
+Simply run `disco` without arguments to launch the interactive menu:
+
+```bash
+# Launch interactive menu
+disco
+
+# With sudo for administrative actions
+sudo disco
+```
+
+**Menu features:**
+
+- Navigate with **↑↓ arrow keys**
+- Select with **Enter**
+- Quit with **q** or select Exit
+- Critical actions require typing "yes" to confirm
+- Real-time container status in header
+- Visual indicators for actions requiring sudo (⚠️)
+
+```text
+╔════════════════════════════════════════════════════════════╗
+║  🚀 Discourse Manager v1.1.0                              ║
+║  📦 Container: app | Status: 🟢 Running                   ║
+╚════════════════════════════════════════════════════════════╝
+
+→ 📊 Show Status
+  🔄 Restart Container
+  📝 View Logs (last 100 lines)
+  📺 Live Monitor
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🔧 Full Rebuild (with updates) (requires sudo) ⚠
+  ⚡ Fast Rebuild
+  💾 Create Backup
+  🧹 Cleanup Docker Resources ⚠
+  ...
+```
+
+### Command Line Mode
+
+You can also use traditional commands:
 
 ```bash
 # Full rebuild with notifications
@@ -225,6 +269,8 @@ Contributions are welcome! If you have ideas:
 
 ## 📝 Roadmap
 
+- [x] Interactive menu with arrow key navigation
+- [x] Safety confirmations for critical operations
 - [ ] Automatic backups before rebuild
 - [ ] Monitoring integration (Prometheus/Grafana)
 - [ ] CI/CD webhook support
@@ -239,7 +285,7 @@ If you encounter issues:
 
 1. Check logs: `disco logs`
 2. Check configuration: `disco show-config`
-3. Create an [Issue](https://github.com/yourusername/disco/issues)
+3. Create an [Issue](https://github.com/dignezzz/discourse-cli/issues)
 
 ## 📄 License
 

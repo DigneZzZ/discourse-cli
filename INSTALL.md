@@ -6,7 +6,7 @@
 
 ```bash
 # Download and install in one command
-sudo curl -o /usr/local/bin/disco https://raw.githubusercontent.com/yourusername/disco/main/disco && \
+sudo curl -o /usr/local/bin/disco https://raw.githubusercontent.com/dignezzz/discourse-cli/main/disco && \
 sudo chmod +x /usr/local/bin/disco
 
 # Verify installation
@@ -17,7 +17,7 @@ disco version
 
 ```bash
 # Download and install
-sudo wget -O /usr/local/bin/disco https://raw.githubusercontent.com/yourusername/disco/main/disco && \
+sudo wget -O /usr/local/bin/disco https://raw.githubusercontent.com/dignezzz/discourse-cli/main/disco && \
 sudo chmod +x /usr/local/bin/disco
 
 # Verify installation
@@ -28,7 +28,7 @@ disco version
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/yourusername/disco.git
+git clone https://github.com/dignezzz/discourse-cli.git
 cd disco
 
 # 2. Install script
@@ -48,7 +48,7 @@ disco version
 mkdir -p ~/.config
 
 # Copy example configuration
-curl -o ~/.disco.env https://raw.githubusercontent.com/yourusername/disco/main/.env.example
+curl -o ~/.disco.env https://raw.githubusercontent.com/dignezzz/discourse-cli/main/.env.example
 
 # Or create manually
 nano ~/.disco.env
@@ -188,7 +188,7 @@ sudo disco cleanup
 
 ```bash
 # Download and install latest version
-sudo curl -o /usr/local/bin/disco https://raw.githubusercontent.com/yourusername/disco/main/disco && \
+sudo curl -o /usr/local/bin/disco https://raw.githubusercontent.com/dignezzz/discourse-cli/main/disco && \
 sudo chmod +x /usr/local/bin/disco
 
 # Check new version
@@ -224,7 +224,7 @@ sudo rm -rf /etc/disco
 which disco
 
 # If not found, install again
-sudo curl -o /usr/local/bin/disco https://raw.githubusercontent.com/yourusername/disco/main/disco
+sudo curl -o /usr/local/bin/disco https://raw.githubusercontent.com/dignezzz/discourse-cli/main/disco
 sudo chmod +x /usr/local/bin/disco
 ```
 
@@ -252,8 +252,8 @@ which curl
 
 - 📖 [README.md](README.md) - Main documentation
 - 📝 [CHANGELOG.md](CHANGELOG.md) - Version history
-- 🐛 [Issues](https://github.com/yourusername/disco/issues) - Report a problem
+- 🐛 [Issues](https://github.com/dignezzz/discourse-cli/issues) - Report a problem
 
 ---
 
-If you have any questions, create an [Issue](https://github.com/yourusername/disco/issues) on GitHub.
+If you have any questions, create an [Issue](https://github.com/dignezzz/discourse-cli/issues) on GitHub.
