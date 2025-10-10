@@ -129,7 +129,20 @@ get_container_uptime() {
 }
 
 get_discourse_version() {
-  docker exec $CONFIG_NAME cat /var/www/discourse/config/version.rb 2>/dev/null | grep VERSION | cut -d'"' -f2 | tr -d '\r\n' || echo "unknown"
+  # Try API first (fastest and most reliable)
+  local version=$(docker exec $CONFIG_NAME curl -s http://localhost/about.json 2>/dev/null | grep -o '"version":"[^"]*"' | cut -d'"' -f4 2>/dev/null)
+  
+  # Fallback to lib/version.rb if API fails
+  if [[ -z "$version" ]]; then
+    version=$(docker exec $CONFIG_NAME cat /var/www/discourse/lib/version.rb 2>/dev/null | grep -oP 'VERSION\s*=\s*"\K[^"]+' 2>/dev/null)
+  fi
+  
+  # Final fallback
+  if [[ -z "$version" ]]; then
+    version="unknown"
+  fi
+  
+  echo "$version"
 }
 
 cmd_rebuild() {
@@ -476,32 +489,8 @@ draw_header() {
   echo ""
 }
 
-draw_menu_item() {
-  local index=$1
-  local item=$2
-  local requires_root=$3
-  local requires_confirm=$4
-  
-  local prefix="  "
-  local suffix=""
-  
-  if [[ $requires_root == "true" ]] && [[ $EUID -ne 0 ]]; then
-    suffix=" ${DIM}(requires sudo)${NC}"
-  fi
-  
-  if [[ $requires_confirm == "true" ]]; then
-    suffix="${suffix} ${YELLOW}⚠${NC}"
-  fi
-  
-  if [[ $index -eq $MENU_SELECTED ]]; then
-    echo -e "${GREEN}${BOLD}→${NC} ${CYAN}${BOLD}$item${NC}${suffix}"
-  else
-    echo -e "${prefix}${DIM}$item${NC}${suffix}"
-  fi
-}
-
 draw_separator() {
-  echo -e "  ${DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "     ${DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 }
 
 show_interactive_menu() {
@@ -594,70 +583,70 @@ show_interactive_menu() {
     "false"
   )
   
-  MENU_SELECTED=0
-  
   while true; do
     draw_header
     
-    # Draw menu items
-    local index=0
+    # Draw menu items with numbers
+    local index=1
+    local menu_map=()
+    
     for i in "${!MENU_ITEMS[@]}"; do
       if [[ "${MENU_ITEMS[$i]}" == "separator" ]]; then
         draw_separator
       else
-        draw_menu_item "$index" "${MENU_ITEMS[$i]}" "${MENU_REQUIRES_ROOT[$i]}" "${MENU_REQUIRES_CONFIRM[$i]}"
+        # Format number with proper padding
+        local num_display
+        if [[ $index -lt 10 ]]; then
+          num_display=" $index"
+        else
+          num_display="$index"
+        fi
+        
+        # Build menu item line
+        local item_line="${GREEN}${num_display}.${NC}  ${MENU_ITEMS[$i]}"
+        
+        # Add warning icon for dangerous operations
+        if [[ "${MENU_REQUIRES_CONFIRM[$i]}" == "true" ]]; then
+          item_line="${item_line} ${RED}⚠${NC}"
+        fi
+        
+        echo -e "$item_line"
+        menu_map[$index]=$i
         ((index++))
       fi
     done
     
+    draw_separator
+    echo -e "${GREEN} 0.${NC}  ❌ Exit"
+    
     echo ""
-    echo -e "${DIM}Use ↑↓ arrows to navigate, Enter to select, q to quit${NC}"
+    echo -e "${YELLOW}Enter your choice [0-$((index-1))] or 'q' to quit:${NC} "
+    read -r choice
     
-    # Read user input
-    read -rsn1 key
-    
-    case "$key" in
-      $'\x1b')  # ESC sequence
-        read -rsn2 -t 0.1 key
-        case "$key" in
-          '[A')  # Up arrow
-            ((MENU_SELECTED--))
-            # Skip separators going up
-            while [[ "${MENU_COMMANDS[$MENU_SELECTED]}" == "separator" ]] && [[ $MENU_SELECTED -ge 0 ]]; do
-              ((MENU_SELECTED--))
-            done
-            if [[ $MENU_SELECTED -lt 0 ]]; then
-              # Find last non-separator item
-              MENU_SELECTED=${#MENU_COMMANDS[@]}
-              ((MENU_SELECTED--))
-              while [[ "${MENU_COMMANDS[$MENU_SELECTED]}" == "separator" ]]; do
-                ((MENU_SELECTED--))
-              done
-            fi
-            ;;
-          '[B')  # Down arrow
-            ((MENU_SELECTED++))
-            # Skip separators going down
-            while [[ "${MENU_COMMANDS[$MENU_SELECTED]}" == "separator" ]] && [[ $MENU_SELECTED -lt ${#MENU_COMMANDS[@]} ]]; do
-              ((MENU_SELECTED++))
-            done
-            if [[ $MENU_SELECTED -ge ${#MENU_COMMANDS[@]} ]]; then
-              MENU_SELECTED=0
-            fi
-            ;;
-        esac
+    # Handle choice
+    case "$choice" in
+      0|q|Q)
+        clear
+        echo -e "${GREEN}👋 Goodbye!${NC}"
+        exit 0
         ;;
-      '')  # Enter key
-        local selected_command="${MENU_COMMANDS[$MENU_SELECTED]}"
-        
-        if [[ "$selected_command" == "exit" ]]; then
-          clear
-          echo -e "${GREEN}👋 Goodbye!${NC}"
-          exit 0
+      ''|*[!0-9]*)
+        log_error "Invalid input. Please enter a number."
+        sleep 1
+        continue
+        ;;
+      *)
+        if [[ $choice -lt 1 || $choice -ge $index ]]; then
+          log_error "Invalid choice. Please enter a number between 0 and $((index-1))"
+          sleep 1
+          continue
         fi
         
+        local selected_index="${menu_map[$choice]}"
+        local selected_command="${MENU_COMMANDS[$selected_index]}"
+        
         # Check if requires root
-        if [[ "${MENU_REQUIRES_ROOT[$MENU_SELECTED]}" == "true" ]] && [[ $EUID -ne 0 ]]; then
+        if [[ "${MENU_REQUIRES_ROOT[$selected_index]}" == "true" ]] && [[ $EUID -ne 0 ]]; then
           clear
           log_error "This action requires root privileges"
           echo ""
@@ -668,9 +657,9 @@ show_interactive_menu() {
         fi
         
         # Check if requires confirmation
-        if [[ "${MENU_REQUIRES_CONFIRM[$MENU_SELECTED]}" == "true" ]]; then
+        if [[ "${MENU_REQUIRES_CONFIRM[$selected_index]}" == "true" ]]; then
           clear
-          echo -e "${YELLOW}⚠️  WARNING: ${MENU_ITEMS[$MENU_SELECTED]}${NC}"
+          echo -e "${YELLOW}⚠️  WARNING: ${MENU_ITEMS[$selected_index]}${NC}"
           echo ""
           
           case "$selected_command" in
@@ -712,11 +701,6 @@ show_interactive_menu() {
         echo ""
         echo -e "${DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
         read -p "Press Enter to return to menu..."
-        ;;
-      'q'|'Q')  # Quit
-        clear
-        echo -e "${GREEN}👋 Goodbye!${NC}"
-        exit 0
         ;;
     esac
   done

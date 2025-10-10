@@ -11,8 +11,8 @@ Practical examples of using disco in different scenarios.
 disco
 
 # You'll see the interactive menu
-# Navigate with ↑↓ arrows
-# Press Enter on "📊 Show Status" to check your forum
+# Type 1 to show status
+# Type 0 or q to exit
 ```
 
 ### Regular Maintenance
@@ -21,11 +21,11 @@ disco
 # Start with sudo to have all permissions
 sudo disco
 
-# Navigate to:
-# 1. Check status first
-# 2. View logs if needed
-# 3. Run cleanup monthly
-# 4. Exit when done
+# Then simply type:
+# 1 - Check status first
+# 3 - View logs if needed
+# 8 - Run cleanup monthly (requires 'yes' confirmation)
+# 0 - Exit when done
 ```
 
 ### Quick Restart
@@ -34,8 +34,7 @@ sudo disco
 # Launch menu
 sudo disco
 
-# Navigate down to "🔄 Restart Container"
-# Press Enter
+# Type 2 for restart
 # Wait for completion
 # Press Enter to return to menu
 ```

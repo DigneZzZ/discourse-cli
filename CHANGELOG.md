@@ -6,22 +6,23 @@ All notable changes to this project will be documented in this file.
 
 ### 🎮 Added
 - **Interactive menu mode** - Launch `disco` without arguments for a user-friendly menu
-- Arrow key navigation (↑↓) for menu selection
-- Real-time container status display in menu header
-- Visual indicators for actions requiring sudo
+- **Number-based navigation** - Just type 1-14 to select (more reliable than arrows)
+- **API-based version detection** - Fast and reliable version display via `/about.json`
+- Real-time container status and version display in menu header
+- Visual indicators ⚠ for dangerous operations
 - Safety confirmations for critical operations (rebuild, stop, cleanup)
 - Type "yes" confirmation for dangerous actions
-- Press 'q' to quit from menu
-- Automatic separator skip in navigation
+- Type '0' or 'q' to quit from menu
 
 ### 🔒 Improved
-- Enhanced user safety with explicit confirmations for:
+- Enhanced user safety with explicit "yes" confirmations for:
   - Full rebuild (with downtime warning)
   - Container stop (availability warning)
   - Docker cleanup (resource removal warning)
-- Better visual feedback with new colors (cyan, magenta, bold, dim)
+- Better visual feedback with numbered menu items
 - Improved help text with interactive menu recommendation
-- Menu shows which actions require root privileges
+- More reliable navigation (works in any terminal)
+- Version detection with fallback mechanisms
 
 ### 🎨 Changed
 - Default behavior: show interactive menu instead of help

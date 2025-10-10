@@ -8,12 +8,19 @@ A convenient wrapper for managing Discourse with **interactive menu** and Telegr
 
 ## ✨ Features
 
-- 🎮 **Interactive menu** - navigate with arrow keys, no need to remember commands
+### 🆕 v1.1.0 Highlights
+- � **Number-based menu** - just type 1-14 to select (more reliable than arrows)
+- ⚡ **Fast version detection** - uses API endpoint for instant results
+- ✅ **Smart confirmations** - dangerous operations (rebuild, stop) require typing 'yes'
+- 🎨 **Enhanced UI** - live status in header, visual warnings for critical actions
+
+### Core Features
+- 🎮 **Interactive menu** - simple number selection, no need to remember commands
 - 🔄 **Container management** - rebuild, start, stop, restart
-- 📊 **Monitoring** - status, logs, resource usage
-- 💾 **Backup** - quick backup creation
+- 📊 **Monitoring** - status, logs, resource usage with live updates
+- 💾 **Backup** - quick backup creation with Telegram notifications
 - 📱 **Telegram notifications** - stay informed about all operations
-- ⚠️ **Safety confirmations** - critical operations require explicit confirmation
+- ⚠️ **Safety confirmations** - critical operations require explicit 'yes' confirmation
 - 🎨 **Beautiful interface** - colored output and clear messages
 - ⚙️ **Flexible configuration** - .env file support
 - 🔐 **Smart sudo detection** - warns when root privileges are required
@@ -113,29 +120,39 @@ sudo disco
 
 **Menu features:**
 
-- Navigate with **↑↓ arrow keys**
-- Select with **Enter**
-- Quit with **q** or select Exit
-- Critical actions require typing "yes" to confirm
-- Real-time container status in header
-- Visual indicators for actions requiring sudo (⚠️)
+- **Simply type a number (1-14)** to select action
+- Type **0** or **q** to quit
+- Critical actions require typing **"yes"** to confirm
+- Real-time container status and version in header
+- Visual indicators **⚠** for dangerous operations
 
 ```text
 ╔════════════════════════════════════════════════════════════╗
-║  🚀 Discourse Manager v1.1.0                              ║
-║  📦 Container: app | Status: 🟢 Running                   ║
+║  🚀 Discourse Manager v1.1.0                        ║
+║  📦 Container: app | Status: 🟢 Running          ║
 ╚════════════════════════════════════════════════════════════╝
 
-→ 📊 Show Status
-  🔄 Restart Container
-  📝 View Logs (last 100 lines)
-  📺 Live Monitor
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  🔧 Full Rebuild (with updates) (requires sudo) ⚠
-  ⚡ Fast Rebuild
-  💾 Create Backup
-  🧹 Cleanup Docker Resources ⚠
-  ...
+ 1.  📊 Show Status
+ 2.  🔄 Restart Container
+ 3.  📝 View Logs (last 100 lines)
+ 4.  📺 Live Monitor
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 5.  🔧 Full Rebuild (with updates) ⚠
+ 6.  ⚡ Fast Rebuild
+ 7.  💾 Create Backup
+ 8.  🧹 Cleanup Docker Resources ⚠
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 9.  ▶️  Start Container
+10.  ⏸️  Stop Container ⚠
+11.  🐚 Enter Container Shell
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12.  📥 Update Launcher
+13.  📱 Test Telegram Notifications
+14.  ⚙️  Show Configuration
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 0.  ❌ Exit
+
+Enter your choice [0-14] or 'q' to quit: _
 ```
 
 ### Command Line Mode
@@ -276,7 +293,7 @@ Contributions are welcome! If you have ideas:
 
 ## 📝 Roadmap
 
-- [x] Interactive menu with arrow key navigation
+- [x] Interactive menu with number-based selection
 - [x] Safety confirmations for critical operations
 - [ ] Automatic backups before rebuild
 - [ ] Monitoring integration (Prometheus/Grafana)

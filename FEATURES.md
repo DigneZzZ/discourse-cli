@@ -6,40 +6,39 @@ The interactive menu makes managing your Discourse instance as easy as playing a
 
 ## Navigation
 
-- **↑ / ↓** - Move up/down through menu items
-- **Enter** - Select the highlighted option
-- **q** - Quit the menu
+- **Type 1-14** - Select menu item by number
+- **Type 0 or q** - Quit the menu
 - **Ctrl+C** - Cancel current operation
 
 ## Menu Layout
 
 ```text
 ╔════════════════════════════════════════════════════════════╗
-║  🚀 Discourse Manager v1.1.0                              ║
-║  📦 Container: app | Status: 🟢 Running                   ║
+║  🚀 Discourse Manager v1.1.0                        ║
+║  📦 Container: app | Status: 🟢 Running          ║
 ╚════════════════════════════════════════════════════════════╝
 
-→ 📊 Show Status
-  🔄 Restart Container
-  📝 View Logs (last 100 lines)
-  📺 Live Monitor
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  🔧 Full Rebuild (with updates) (requires sudo) ⚠
-  ⚡ Fast Rebuild (requires sudo)
-  💾 Create Backup (requires sudo)
-  🧹 Cleanup Docker Resources (requires sudo) ⚠
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  ▶️  Start Container (requires sudo)
-  ⏸️  Stop Container (requires sudo) ⚠
-  🐚 Enter Container Shell
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  📥 Update Launcher (requires sudo)
-  📱 Test Telegram Notifications
-  ⚙️  Show Configuration
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  ❌ Exit
+ 1.  📊 Show Status
+ 2.  🔄 Restart Container
+ 3.  📝 View Logs (last 100 lines)
+ 4.  📺 Live Monitor
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 5.  🔧 Full Rebuild (with updates) ⚠
+ 6.  ⚡ Fast Rebuild
+ 7.  💾 Create Backup
+ 8.  🧹 Cleanup Docker Resources ⚠
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 9.  ▶️  Start Container
+10.  ⏸️  Stop Container ⚠
+11.  🐚 Enter Container Shell
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12.  📥 Update Launcher
+13.  📱 Test Telegram Notifications
+14.  ⚙️  Show Configuration
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 0.  ❌ Exit
 
-Use ↑↓ arrows to navigate, Enter to select, q to quit
+Enter your choice [0-14] or 'q' to quit: _
 ```
 
 ## Visual Indicators
@@ -181,17 +180,17 @@ This gives you time to read the output before returning to the menu.
 ✅ **No need to remember commands** - everything is visible  
 ✅ **Visual feedback** - see status at a glance  
 ✅ **Safer** - confirmations prevent accidents  
-✅ **Faster** - navigate with arrows, no typing  
+✅ **Faster** - just type a number, no need for arrows  
 ✅ **Discoverable** - all features are visible  
 ✅ **Beginner-friendly** - perfect for occasional use  
-✅ **Still fast for experts** - arrow keys are quick  
+✅ **Universal** - works in any terminal (no special keys needed)  
 
 ## When to Use Command-Line Mode
 
 - **Automation** - scripts and cron jobs
-- **SSH with limited terminal** - some terminals don't support arrow keys well
 - **Quick one-off commands** - faster to type `disco status` than launch menu
 - **Remote execution** - piping commands or running via sudo with specific args
+- **Scripts** - integrate with other tools
 
 ## Examples
 
@@ -205,10 +204,9 @@ disco status
 # Launch menu
 disco
 
-# Navigate with arrows, view status
-# Check logs if needed
-# Return to menu
-# Exit when done
+# Type 1 to view status
+# Type 3 to check logs
+# Type 0 to exit
 ```
 
 ### Administrative Tasks (Menu with sudo)
