@@ -7,16 +7,7 @@
 # Installation: sudo cp disco /usr/local/bin/disco && sudo chmod +x /usr/local/bin/disco
 # Usage: disco [command] [options] or just disco for interactive menu
 
-VERSION="1.1.0"/env bash
-
-# disco - Discourse Launcher Management Tool
-# A convenient wrapper for managing Discourse with Telegram notifications
-#
-# GitHub: https://github.com/dignezzz/discourse-cli
-# Installation: sudo cp disco /usr/local/bin/disco && sudo chmod +x /usr/local/bin/disco
-# Usage: disco <command> [options]
-
-VERSION="1.0.0"
+VERSION="1.1.0"
 
 DEFAULT_DISCOURSE_PATH="/var/discourse"
 DEFAULT_CONFIG_NAME="app"

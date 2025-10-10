@@ -1,5 +1,7 @@
 # 📦 Installation Guide for disco
 
+Complete guide for installing and configuring disco - Discourse management tool with **interactive menu**.
+
 ## Quick Installation (Recommended)
 
 ### Option 1: Using curl
@@ -11,6 +13,9 @@ sudo chmod +x /usr/local/bin/disco
 
 # Verify installation
 disco version
+
+# Try interactive menu!
+disco
 ```
 
 ### Option 2: Using wget
@@ -153,7 +158,25 @@ DISCOURSE_PATH=/var/discourse
 CONFIG_NAME=app
 ```
 
-## Verification
+## First Run
+
+### Launch Interactive Menu
+
+Simply run `disco` to see the interactive menu:
+
+```bash
+# Launch menu (recommended for first-time users)
+disco
+
+# Or with sudo for administrative actions
+sudo disco
+```
+
+The menu will show:
+- Container status at the top
+- All available actions
+- Which commands require sudo
+- Safety warnings for critical operations
 
 ### Basic checks
 
@@ -169,6 +192,9 @@ disco show-config
 
 # Check Discourse status
 disco status
+
+# Or use interactive menu!
+disco
 ```
 
 ### Checks with root privileges

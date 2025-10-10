@@ -18,18 +18,25 @@ A convenient wrapper for managing Discourse with **interactive menu** and Telegr
 - ⚙️ **Flexible configuration** - .env file support
 - 🔐 **Smart sudo detection** - warns when root privileges are required
 
-## 📦 Installation
+## � Quick Start
+
+New to disco? Check out the **[Quick Start Guide](QUICKSTART.md)** to get up and running in 5 minutes!
+
+## �📦 Installation
 
 ### Quick install
 
 ```bash
 # Download and install
-curl -o disco https://raw.githubusercontent.com/dignezzz/discourse-cli/main/disco
+curl -o disco https://raw.githubusercontent.com/DigneZzZ/discourse-cli/main/disco
 chmod +x disco
 sudo mv disco /usr/local/bin/
 
 # Verify installation
 disco version
+
+# Launch interactive menu!
+disco
 ```
 
 ### Install from source
@@ -287,13 +294,20 @@ If you encounter issues:
 2. Check configuration: `disco show-config`
 3. Create an [Issue](https://github.com/dignezzz/discourse-cli/issues)
 
-## 📄 License
+## � Documentation
+
+- **[INSTALL.md](INSTALL.md)** - Detailed installation guide
+- **[FEATURES.md](FEATURES.md)** - Interactive menu features explained
+- **[EXAMPLES.md](EXAMPLES.md)** - Real-world usage examples and workflows
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and changes
+
+## �📄 License
 
 MIT License - see [LICENSE](LICENSE) file
 
 ## 👤 Author
 
-Created with ❤️ for the Discourse community
+Created with ❤️ for the Discourse community by [@DigneZzZ](https://github.com/DigneZzZ)
 
 ## 🌟 Acknowledgments
 
@@ -305,3 +319,5 @@ Created with ❤️ for the Discourse community
 **Important:** Most commands require root privileges. Use `sudo` where necessary.
 
 **Support:** If this tool was helpful, please ⭐ the repository on GitHub!
+
+**Feedback:** Found a bug or have a feature request? [Open an issue](https://github.com/DigneZzZ/discourse-cli/issues)
