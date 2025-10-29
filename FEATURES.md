@@ -6,7 +6,7 @@ The interactive menu makes managing your Discourse instance as easy as playing a
 
 ## Navigation
 
-- **Type 1-14** - Select menu item by number
+- **Type 1-15** - Select menu item by number
 - **Type 0 or q** - Quit the menu
 - **Ctrl+C** - Cancel current operation
 
@@ -14,7 +14,7 @@ The interactive menu makes managing your Discourse instance as easy as playing a
 
 ```text
 ╔════════════════════════════════════════════════════════════╗
-║  🚀 Discourse Manager v1.1.0                        ║
+║  🚀 Discourse Manager v1.2.0                        ║
 ║  📦 Container: app | Status: 🟢 Running          ║
 ╚════════════════════════════════════════════════════════════╝
 
@@ -35,10 +35,11 @@ The interactive menu makes managing your Discourse instance as easy as playing a
 12.  📥 Update Launcher
 13.  📱 Test Telegram Notifications
 14.  ⚙️  Show Configuration
+15.  🔄 Update disco
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  0.  ❌ Exit
 
-Enter your choice [0-14] or 'q' to quit: _
+Enter your choice [0-15] or 'q' to quit: _
 ```
 
 ## Visual Indicators
@@ -133,6 +134,7 @@ Press Enter to continue...
 
 ### Utilities
 - **📱 Test Telegram** - Send test notification to verify setup
+- **🔄 Update disco** - Update disco tool to latest version from GitHub
 - **❌ Exit** - Close the menu
 
 ## Return to Menu

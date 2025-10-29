@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2025-10-29
+
+### 🔄 Added
+- **Auto-update system** - Automatic version checking on startup (cached for 24 hours)
+- **`disco self-update` command** - One-command update to latest version
+- **Update notifications** - Visual notifications when new version is available
+- Menu item "🔄 Update disco" in interactive menu (item 15)
+- Update check when running `disco version` command
+- Smart update mechanism with:
+  - Download verification
+  - Automatic sudo detection
+  - Syntax validation before installation
+  - Cache cleanup after successful update
+
+### 🔧 Improved
+- **Reliable version detection** - Changed primary method from API to direct file reading
+  - Now reads from `/var/www/discourse/lib/version.rb` for 100% accuracy
+  - API endpoint as fallback for compatibility
+  - Fixed "unknown" version issue in Telegram notifications
+- Better error handling in version detection
+- One-line installation command in documentation
+
+### 📝 Changed
+- Version bumped to 1.2.0
+- Menu now has 15 items (added self-update)
+- Updated installation instructions (simplified to one command)
+- Enhanced help text with self-update command
+
+### 🐛 Fixed
+- Discourse version now correctly displays in Telegram notifications
+- Fixed version detection using more reliable method (`grep -E` instead of `grep -oP`)
+
+### 📚 Documentation
+- Updated README.md with v1.2.0 features
+- Added update instructions
+- Updated menu screenshots to show 15 items
+- Updated roadmap with completed features
+
 ## [1.1.0] - 2025-10-10
 
 ### 🎮 Added

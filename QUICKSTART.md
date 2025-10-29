@@ -13,7 +13,7 @@ sudo chmod +x /usr/local/bin/disco
 
 ```bash
 disco version
-# Output: disco v1.1.0
+# Output: disco v1.2.0
 ```
 
 ## Step 3: Try It! (10 seconds)
@@ -26,14 +26,20 @@ You'll see:
 
 ```text
 ╔════════════════════════════════════════════════════════════╗
-║  🚀 Discourse Manager v1.1.0                              ║
+║  🚀 Discourse Manager v1.2.0                              ║
 ║  📦 Container: app | Status: 🟢 Running                   ║
 ╚════════════════════════════════════════════════════════════╝
 
-→ 📊 Show Status
-  🔄 Restart Container
-  📝 View Logs (last 100 lines)
-  ...
+ 1.  📊 Show Status
+ 2.  🔄 Restart Container
+ 3.  📝 View Logs (last 100 lines)
+ 4.  📺 Live Monitor
+     ...
+15.  🔄 Update disco
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 0.  ❌ Exit
+
+Enter your choice [0-15] or 'q' to quit: _
 ```
 
 **That's it!** 🎉
@@ -144,8 +150,29 @@ You'll receive:
 🧪 Test message
 
 ✅ Notifications are working correctly!
-🤖 disco v1.1.0
-📅 2025-10-10 15:30:00
+🤖 disco v1.2.0
+📅 2025-10-29 15:30:00
+```
+
+## Keeping disco Updated
+
+disco automatically checks for updates once per day and notifies you:
+
+```text
+╔════════════════════════════════════════════════════════════╗
+║  📦 Update Available!                                   ║
+║                                                            ║
+║  Current version: 1.1.0                                  ║
+║  Latest version:  1.2.0                                 ║
+║                                                            ║
+║  Run: disco self-update to update                         ║
+╚════════════════════════════════════════════════════════════╝
+```
+
+To update:
+
+```bash
+disco self-update
 ```
 
 ## Command-Line Alternative
@@ -157,6 +184,7 @@ disco status          # Quick status
 disco logs           # View logs
 sudo disco restart   # Restart forum
 sudo disco rebuild   # Full update
+disco self-update    # Update disco itself
 ```
 
 ## Next Steps
