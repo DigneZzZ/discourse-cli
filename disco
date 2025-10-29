@@ -7,7 +7,7 @@
 # Installation: sudo cp disco /usr/local/bin/disco && sudo chmod +x /usr/local/bin/disco
 # Usage: disco [command] [options] or just disco for interactive menu
 
-VERSION="1.1.0"
+VERSION="1.2.0"
 
 DEFAULT_DISCOURSE_PATH="/var/discourse"
 DEFAULT_CONFIG_NAME="app"
@@ -129,12 +129,12 @@ get_container_uptime() {
 }
 
 get_discourse_version() {
-  # Try API first (fastest and most reliable)
-  local version=$(docker exec $CONFIG_NAME curl -s http://localhost/about.json 2>/dev/null | grep -o '"version":"[^"]*"' | cut -d'"' -f4 2>/dev/null)
+  # Primary method: read from lib/version.rb (most reliable)
+  local version=$(docker exec $CONFIG_NAME cat /var/www/discourse/lib/version.rb 2>/dev/null | grep -E "STRING = " | cut -d'"' -f2 2>/dev/null)
   
-  # Fallback to lib/version.rb if API fails
+  # Fallback to API if file read fails
   if [[ -z "$version" ]]; then
-    version=$(docker exec $CONFIG_NAME cat /var/www/discourse/lib/version.rb 2>/dev/null | grep -oP 'VERSION\s*=\s*"\K[^"]+' 2>/dev/null)
+    version=$(docker exec $CONFIG_NAME curl -s http://localhost/about.json 2>/dev/null | grep -o '"version":"[^"]*"' | cut -d'"' -f4 2>/dev/null)
   fi
   
   # Final fallback
@@ -143,6 +143,122 @@ get_discourse_version() {
   fi
   
   echo "$version"
+}
+
+check_for_updates() {
+  # Check if update check was done recently (cache for 24 hours)
+  local cache_file="/tmp/.disco_update_check"
+  local current_time=$(date +%s)
+  
+  if [[ -f "$cache_file" ]]; then
+    local last_check=$(cat "$cache_file" 2>/dev/null || echo "0")
+    local time_diff=$((current_time - last_check))
+    # Skip check if less than 24 hours (86400 seconds)
+    if [[ $time_diff -lt 86400 ]]; then
+      return 0
+    fi
+  fi
+  
+  # Update cache timestamp
+  echo "$current_time" > "$cache_file" 2>/dev/null
+  
+  # Check latest version from GitHub
+  local latest_version=$(curl -s https://raw.githubusercontent.com/DigneZzZ/discourse-cli/main/disco | grep '^VERSION=' | head -1 | cut -d'"' -f2 2>/dev/null)
+  
+  if [[ -z "$latest_version" ]]; then
+    return 0  # Silently fail if can't check
+  fi
+  
+  # Compare versions
+  if [[ "$latest_version" != "$VERSION" ]]; then
+    echo ""
+    echo -e "${YELLOW}╔════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${YELLOW}║${NC}  ${BOLD}📦 Update Available!${NC}                                   ${YELLOW}║${NC}"
+    echo -e "${YELLOW}║${NC}                                                            ${YELLOW}║${NC}"
+    echo -e "${YELLOW}║${NC}  Current version: ${RED}$VERSION${NC}                                  ${YELLOW}║${NC}"
+    echo -e "${YELLOW}║${NC}  Latest version:  ${GREEN}$latest_version${NC}                                 ${YELLOW}║${NC}"
+    echo -e "${YELLOW}║${NC}                                                            ${YELLOW}║${NC}"
+    echo -e "${YELLOW}║${NC}  Run: ${GREEN}disco self-update${NC} to update                         ${YELLOW}║${NC}"
+    echo -e "${YELLOW}╚════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+  fi
+}
+
+cmd_self_update() {
+  log_info "Checking for updates..."
+  
+  local latest_version=$(curl -s https://raw.githubusercontent.com/DigneZzZ/discourse-cli/main/disco | grep '^VERSION=' | head -1 | cut -d'"' -f2 2>/dev/null)
+  
+  if [[ -z "$latest_version" ]]; then
+    log_error "Failed to check for updates. Please check your internet connection."
+    return 1
+  fi
+  
+  if [[ "$latest_version" == "$VERSION" ]]; then
+    log_success "You are already running the latest version (v$VERSION)"
+    return 0
+  fi
+  
+  echo ""
+  log_info "Current version: v$VERSION"
+  log_info "Latest version:  v$latest_version"
+  echo ""
+  
+  read -p "$(echo -e ${CYAN}Do you want to update? [y/N]: ${NC})" -n 1 -r
+  echo ""
+  
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    log_warning "Update cancelled"
+    return 0
+  fi
+  
+  log_info "Downloading latest version..."
+  
+  local temp_file="/tmp/disco_update_$$"
+  
+  if ! curl -fsSL -o "$temp_file" https://raw.githubusercontent.com/DigneZzZ/discourse-cli/main/disco; then
+    log_error "Failed to download update"
+    rm -f "$temp_file"
+    return 1
+  fi
+  
+  # Verify downloaded file
+  if ! bash -n "$temp_file" 2>/dev/null; then
+    log_error "Downloaded file is invalid"
+    rm -f "$temp_file"
+    return 1
+  fi
+  
+  # Find current script location
+  local script_path=$(which disco 2>/dev/null)
+  if [[ -z "$script_path" ]]; then
+    script_path="/usr/local/bin/disco"
+  fi
+  
+  # Check if we need sudo
+  if [[ ! -w "$script_path" ]] && [[ $EUID -ne 0 ]]; then
+    log_info "Root privileges required to update..."
+    if ! sudo mv "$temp_file" "$script_path"; then
+      log_error "Failed to install update"
+      rm -f "$temp_file"
+      return 1
+    fi
+    sudo chmod +x "$script_path"
+  else
+    if ! mv "$temp_file" "$script_path"; then
+      log_error "Failed to install update"
+      rm -f "$temp_file"
+      return 1
+    fi
+    chmod +x "$script_path"
+  fi
+  
+  # Clear update check cache
+  rm -f /tmp/.disco_update_check
+  
+  log_success "Successfully updated to v$latest_version!"
+  echo ""
+  log_info "Run 'disco version' to verify the update"
 }
 
 cmd_rebuild() {
@@ -513,6 +629,7 @@ show_interactive_menu() {
     "📥 Update Launcher"
     "📱 Test Telegram Notifications"
     "⚙️  Show Configuration"
+    "🔄 Update disco"
     "separator"
     "❌ Exit"
   )
@@ -535,6 +652,7 @@ show_interactive_menu() {
     "update-launcher"
     "test-telegram"
     "show-config"
+    "self-update"
     "separator"
     "exit"
   )
@@ -559,6 +677,7 @@ show_interactive_menu() {
     "false"
     "false"
     "false"
+    "false"
   )
   
   MENU_REQUIRES_CONFIRM=(
@@ -574,6 +693,7 @@ show_interactive_menu() {
     "false"
     "false"
     "true"
+    "false"
     "false"
     "false"
     "false"
@@ -755,6 +875,9 @@ execute_menu_command() {
     show-config)
       cmd_show_config
       ;;
+    self-update)
+      cmd_self_update
+      ;;
   esac
 }
 
@@ -786,6 +909,7 @@ show_help() {
   
   echo -e "${BLUE}Utilities:${NC}"
   echo -e "  ${GREEN}test-telegram${NC}         Send test Telegram notification"
+  echo -e "  ${GREEN}self-update${NC}           Update disco to latest version"
   echo -e "  ${GREEN}help, -h, --help${NC}      Show this help"
   echo -e "  ${GREEN}version, -v${NC}           Show version\n"
   
@@ -809,6 +933,9 @@ show_help() {
 }
 
 main() {
+  # Check for updates on startup (once per 24 hours)
+  check_for_updates
+  
   # If no arguments, show interactive menu
   if [[ $# -eq 0 ]]; then
     check_discourse
@@ -869,11 +996,15 @@ main() {
     show-config)
       cmd_show_config "$@"
       ;;
+    self-update|update-disco)
+      cmd_self_update "$@"
+      ;;
     help|-h|--help)
       show_help
       ;;
     version|-v|--version)
       echo "disco v${VERSION}"
+      check_for_updates
       ;;
     *)
       log_error "Unknown command: $command"
